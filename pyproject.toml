@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zt-anchor"
+version = "0.2.0"
+description = "Document AI that can say 'I don't know': verbatim anchoring, abstention, frozen-holdout evaluation, structured output and Italian contract lint"
+readme = "README.md"
+license = "LicenseRef-PolyForm-Small-Business-1.0.0"
+license-files = ["LICENSE.md", "NOTICE", "COMMERCIAL.md"]
+authors = [{ name = "Gioacchino Tortorici" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["llm", "document-ai", "extraction", "grounding", "abstention", "legal", "italian", "contracts"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Natural Language :: Italian",
+    "Programming Language :: Python :: 3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/Giotor84/zt-anchor"
+Commercial = "https://github.com/Giotor84/zt-anchor/blob/main/COMMERCIAL.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"

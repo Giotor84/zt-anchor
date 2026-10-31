@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZT Anchor · lint contratti</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#667085;--bd:#e4e7ec;--acc:#2f5bd3;--err:#b42318;--warn:#b54708;--hl:#fff3c4}
+@media (prefers-color-scheme:dark){:root{--bg:#11141a;--card:#1a1f27;--fg:#e6e9ef;--mut:#98a2b3;--bd:#2b3240;--acc:#7aa2ff;--err:#f97066;--warn:#f79009;--hl:#4a3b00}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--fg)}
+header{padding:14px 20px;border-bottom:1px solid var(--bd)}h1{margin:0;font-size:18px}.sub{color:var(--mut);font-size:13px}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px 20px;max-width:1300px;margin:auto}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}
+textarea{width:100%;min-height:320px;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg);font:13px/1.45 ui-monospace,Consolas,monospace}
+#sez{min-height:70px}label{font-weight:600;display:block;margin:8px 0 4px}
+button{padding:7px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--acc);color:#fff;cursor:pointer}
+button.sec{background:transparent;color:var(--fg)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.f{border-top:1px solid var(--bd);padding:8px 0}.f:first-child{border-top:0}
+.sev{font-size:11px;font-weight:700;text-transform:uppercase;margin-right:6px}.error{color:var(--err)}.warning{color:var(--warn)}
+.ctx{color:var(--mut);font-size:12.5px;margin-top:3px;white-space:pre-wrap}mark{background:var(--hl);color:inherit}
+#esito{font-weight:600}.mut{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <h1>ZT Anchor · lint contratti</h1>
+  <div class="sub">Controlli deterministici su accordi in italiano: importi in cifre e in lettere, sezioni obbligatorie,
+    termini definiti e mai usati, rinvii ad articoli inesistenti. Tutto resta su questo PC: nessuna rete.</div>
+</header>
+<main>
+  <section class="card">
+    <div class="row">
+      <input type="file" id="file" accept=".pdf,.txt,.md">
+      <button class="sec" id="esempio">Esempio</button>
+    </div>
+    <label for="testo">Testo dell'accordo</label>
+    <textarea id="testo" placeholder="Incolla il testo o carica un PDF/TXT"></textarea>
+    <label for="sez">Sezioni obbligatorie (una per riga)</label>
+    <textarea id="sez">Premesse
+Oggetto
+Foro competente</textarea>
+    <div class="row" style="margin-top:8px"><button id="go">Controlla</button><span class="mut" id="stato"></span></div>
+  </section>
+  <section class="card">
+    <div class="row" style="justify-content:space-between"><span id="esito">Nessun controllo eseguito</span>
+      <button class="sec" id="json" disabled>Esporta JSON</button></div>
+    <div id="out"></div>
+  </section>
+</main>
+<script>/*__LINT_JS__*/</script>
+<script>/*__PDF_JS__*/</script>
+<script type="text/plain" id="pdfWorkerSource">/*__PDF_WORKER__*/</script>
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  let ultimo = [];
+  if (window.pdfjsLib) {
+    const blob = new Blob([$("pdfWorkerSource").textContent], { type: "text/javascript" });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+  }
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  async function testoDaPdf(buf) {
+    const pdf = await window.pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise;
+    const pagine = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const c = await (await pdf.getPage(i)).getTextContent();
+      let righe = "", y = null;
+      for (const it of c.items) {
+        const yy = it.transform ? it.transform[5] : null;
+        if (y !== null && yy !== null && Math.abs(yy - y) > 2) righe += "\n";
+        righe += it.str + (it.hasEOL ? "\n" : "");
+        y = yy;
+      }
+      pagine.push(righe);
+    }
+    return pagine.join("\n\n");
+  }
+
+  $("file").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    $("stato").textContent = "lettura…";
+    try {
+      $("testo").value = f.name.toLowerCase().endsWith(".pdf") ? await testoDaPdf(await f.arrayBuffer()) : await f.text();
+      $("stato").textContent = f.name;
+    } catch (err) { $("stato").textContent = "PDF non leggibile: " + err.message; }
+  };
+
+  $("esempio").onclick = () => {
+    $("testo").value = "ACCORDO TRANSATTIVO\n\nPremesse\nAlfa S.p.A. (di seguito, il «Creditore») e Mario Bianchi (di seguito, il «Debitore») " +
+      "e Beta S.r.l. (di seguito, il «Garante») convengono quanto segue.\n\nArt. 1 - Oggetto\nIl Debitore riconosce il debito verso il Creditore come indicato all'art. 2.\n\n" +
+      "Art. 2 - Importo\nIl Debitore verserà € 12.500,00 (dodicimilacinquecento/00) in unica soluzione e € 3.000,00 (euro tremilacinquecento/00) " +
+      "a titolo di spese, ai sensi dell'art. 1965 c.c.\n\nArt. 3 - Inadempimento\nIn caso di mancato pagamento si applica l'art. 5 del presente accordo.";
+    $("stato").textContent = "esempio inventato";
+  };
+
+  $("go").onclick = () => {
+    const t = $("testo").value;
+    const sez = $("sez").value.split("\n").map(s => s.trim()).filter(Boolean);
+    ultimo = window.ZtAnchorLint.lint(t, sez);
+    const err = ultimo.filter(f => f.severity === "error").length;
+    $("esito").textContent = ultimo.length ? `${err} errori, ${ultimo.length - err} avvisi` : "Nessun problema trovato";
+    $("json").disabled = !ultimo.length;
+    $("out").innerHTML = ultimo.map(f => {
+      const a = Math.max(0, f.start - 80), b = Math.min(t.length, f.end + 80);
+      const ctx = f.end > f.start ? esc(t.slice(a, f.start)) + "<mark>" + esc(t.slice(f.start, f.end)) + "</mark>" + esc(t.slice(f.end, b)) : "";
+      return `<div class="f"><span class="sev ${f.severity}">${f.severity === "error" ? "errore" : "avviso"}</span>${esc(f.message)}` +
+        (ctx ? `<div class="ctx">…${ctx}…</div>` : "") + "</div>";
+    }).join("");
+  };
+
+  $("json").onclick = () => {
+    const blob = new Blob([JSON.stringify(ultimo, null, 2)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "lint.json" });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+})();
+</script>
+</body>
+</html>

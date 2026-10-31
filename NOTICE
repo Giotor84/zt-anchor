@@ -1,0 +1,6 @@
+Required Notice: Copyright (c) 2026 Gioacchino Tortorici (https://github.com/Giotor84)
+
+Third-party components:
+- web/vendor/pdf.min.js and web/vendor/pdf.worker.min.js: Mozilla PDF.js 3.11.174,
+  Copyright Mozilla and individual contributors, licensed under the Apache License, Version 2.0
+  (see web/vendor/README.md).
